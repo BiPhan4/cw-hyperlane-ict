@@ -351,7 +351,10 @@ contract Mailbox is IMailbox, Indexed, Versioned, OwnableUpgradeable {
      */
     function setDefaultIsm(address _module) public onlyOwner {
         require(
-            Address.isContract(_module),
+            Address.isContract(_module), 
+            // NOTE: we had to downgrade from openzeppelin 5.0.2 to 4.9.2 to have 'isContract' function
+            // but hyperlane monorepo depends on 5.0.2, which doesn't have 'isContract'
+            // strange?
             "Mailbox: default ISM not contract"
         );
         defaultIsm = IInterchainSecurityModule(_module);
