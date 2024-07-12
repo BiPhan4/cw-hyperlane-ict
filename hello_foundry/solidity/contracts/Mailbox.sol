@@ -83,11 +83,13 @@ contract Mailbox is IMailbox, Indexed, Versioned, OwnableUpgradeable {
         address _defaultHook,
         address _requiredHook
     ) external initializer {
-        __Ownable_init();
+        __Ownable_init(_owner);
         setDefaultIsm(_defaultIsm);
         setDefaultHook(_defaultHook);
         setRequiredHook(_requiredHook);
-        transferOwnership(_owner);
+        // transferOwnership(_owner); 
+        // NOTE: this redundant call causes build error 
+        // because __Ownable_init from 'OwnableUpgradeable' already transfers ownership to _owner
     }
 
     // ============ External Functions ============
