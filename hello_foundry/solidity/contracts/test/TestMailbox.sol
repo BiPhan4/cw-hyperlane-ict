@@ -11,7 +11,7 @@ contract TestMailbox is Mailbox {
     using TypeCasts for bytes32;
 
     constructor(uint32 _localDomain) Mailbox(_localDomain) {
-        _transferOwnership(msg.sender);
+        // _transferOwnership(msg.sender);
     }
 
     function testHandle(

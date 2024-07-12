@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
+import "forge-std/console.sol"; // Add this import
 import "../solidity/contracts/test/TestMailbox.sol";
 import "../solidity/contracts/test/TestIsm.sol";
 import "../solidity/contracts/test/TestRecipient.sol";
@@ -35,6 +36,7 @@ contract mailboxTest is Test {
 
     address owner;
 
+
     function setUp() public {
         mailbox = new TestMailbox(localDomain);
         recipient = new TestRecipient(); // Initialize TestRecipient correctly
@@ -44,15 +46,29 @@ contract mailboxTest is Test {
         // merkleHook = new MerkleTreeHook(address(mailbox));
         requiredHook = new TestPostDispatchHook();
         overrideHook = new TestPostDispatchHook();
-        defaultIsm = new TestIsm();
+        defaultIsm = new TestIsm();     
 
+        console.log("Owner address at start is:", owner);
+        console.log("Address of mailboxTest contract:", address(this)); // Print the address of mailboxTest contract
+   
         owner = msg.sender;
+        console.log("Owner address:", owner);
+        console.log("msg.sender:", msg.sender);
+
+        console.log("Calling initialize with owner:", owner);
+
         mailbox.initialize(
             owner,
             address(defaultIsm),
             address(defaultHook),
             address(requiredHook)
         );
+
+        // Verify ownership
+        address mailboxOwner = mailbox.owner();
+        console.log("Mailbox owner after initialization:", mailboxOwner);
+        require(mailboxOwner == owner, "Owner not set correctly");
+
     }
 
     function test_localDomain() public {

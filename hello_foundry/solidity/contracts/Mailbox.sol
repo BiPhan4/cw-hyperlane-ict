@@ -2,6 +2,7 @@
 pragma solidity >=0.8.0;
 
 // ============ Internal Imports ============
+import "forge-std/console.sol"; // Add this import
 import {Versioned} from "./upgrade/Versioned.sol";
 import {Indexed} from "./libs/Indexed.sol";
 import {Message} from "./libs/Message.sol";
@@ -83,6 +84,10 @@ contract Mailbox is IMailbox, Indexed, Versioned, OwnableUpgradeable {
         address _defaultHook,
         address _requiredHook
     ) external initializer {
+        console.log("The current owner is", owner());
+        console.log("msg.sender inside initialize is", msg.sender);
+
+        console.log("passed in owner address inside initialize is", _owner);
         __Ownable_init(_owner);
         setDefaultIsm(_defaultIsm);
         setDefaultHook(_defaultHook);
