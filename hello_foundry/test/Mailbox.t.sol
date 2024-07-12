@@ -57,6 +57,12 @@ contract mailboxTest is Test {
 
         console.log("Calling initialize with owner:", owner);
 
+        // Before adding the below line, the address that called 'mailbox.initialize' was actually the address of the mailboxTest contract.
+        // To properly initialize with ownership, the address that calls mailbox.initalize needs to be one and the same as the passed in owner
+        // which we want to be 'msg.sender'.
+        // We use 'vm.prank(owner)' to ensure that msg.sender (the test runner) is making the mailbox.initialize call--NOT the mailboxTest contract.
+
+        vm.prank(owner);
         mailbox.initialize(
             owner,
             address(defaultIsm),
