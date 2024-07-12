@@ -8,9 +8,6 @@ import "../solidity/contracts/test/TestRecipient.sol";
 import "../solidity/contracts/test/TestPostDispatchHook.sol";
 import {StandardHookMetadata} from "../solidity/contracts/hooks/libs/StandardHookMetadata.sol";
 
-
-
-
 contract Empty {}
 
 contract EmptyFallback {
@@ -40,9 +37,10 @@ contract mailboxTest is Test {
 
     function setUp() public {
         mailbox = new TestMailbox(localDomain);
-        recipient = new TestRecipient();
+        recipient = new TestRecipient(); // Initialize TestRecipient correctly
         recipientb32 = address(recipient).addressToBytes32();
         defaultHook = new TestPostDispatchHook();
+        // Uncomment and initialize if needed
         // merkleHook = new MerkleTreeHook(address(mailbox));
         requiredHook = new TestPostDispatchHook();
         overrideHook = new TestPostDispatchHook();
@@ -60,5 +58,4 @@ contract mailboxTest is Test {
     function test_localDomain() public {
         assertEq(mailbox.localDomain(), localDomain);
     }
-
 }

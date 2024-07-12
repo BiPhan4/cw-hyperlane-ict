@@ -27,6 +27,8 @@ contract TestRecipient is
 
     event ReceivedCall(address indexed caller, uint256 amount, string message);
 
+    constructor() Ownable() {} // Added constructor
+
     function handle(
         uint32 _origin,
         bytes32 _sender,
