@@ -56,6 +56,8 @@ func TestEthereum(t *testing.T) {
 	ic := interchaintest.NewInterchain().
 		AddChain(ethereumChain)
 
+	fmt.Printf("eth rpc port %s:", ethereumChain.GetHostRPCAddress())
+
 	require.NoError(t, ic.Build(ctx, eRep, interchaintest.InterchainBuildOptions{
 		TestName:  t.Name(),
 		Client:    client,
