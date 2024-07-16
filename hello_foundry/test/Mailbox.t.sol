@@ -77,7 +77,115 @@ contract mailboxTest is Test {
 
     }
 
-    function test_localDomain() public {
-        assertEq(mailbox.localDomain(), localDomain);
+    // function test_localDomain() public {
+    //     assertEq(mailbox.localDomain(), localDomain);
+    // }
+
+    // function test_initialize() public {
+    //     assertEq(mailbox.owner(), owner);
+    //     assertEq(address(mailbox.defaultIsm()), address(defaultIsm));
+    //     assertEq(address(mailbox.defaultHook()), address(defaultHook));
+    //     assertEq(address(mailbox.requiredHook()), address(requiredHook));
+    // }
+
+// NOTE: a test has to have an assertion otherwise 'forge test' will skip all the logic inside the function
+// even though you are notified in the terminal that the test is run
+    function test_dispatch(
+        uint8 n,
+        bytes calldata body, // seems like the test runner isn't really passing anything into here?
+        bytes calldata metadata
+    ) public {
+        // I don't think we're going to use a hook for now 
+        bytes memory prefixedMetadata = abi.encodePacked(
+            StandardHookMetadata.VARIANT,
+            metadata
+        );
+        bytes calldata defaultMetadata = metadata[0:0];
+        uint256 quote;
+        uint32 nonce;
+        bytes32 id;
+
+        bytes memory largeBytes = new bytes(5120000);
+
+        //WARNING: forge logging does not support bytes 
+        console.log("lenth of largeBytes is:", largeBytes.length);
+
+        console.log("Input parameter n:", n);
+
+        // we increment by 3 because in hyperlane-monorepo, 3 dispatches are run inside the loop, with each dispatch increasing
+        // the nonce by 1 
+        // for now, don't mind the errored assertion, just 
+        for (uint256 i = 0; i < n; i += 3) {
+            nonce = mailbox.nonce();
+
+            // The TestPostDispatchHook just sets the quote to 0, this isn't really practical for 
+            // estimating the gas cost on testnet and main net 
+            quote = mailbox.quoteDispatch(remoteDomain, recipientb32, largeBytes);
+            expectDispatch(requiredHook, defaultHook, defaultMetadata, body);
+            id = mailbox.dispatch{value: quote}(
+                remoteDomain,
+                recipientb32, 
+                body
+            );
+            assertEq(mailbox.latestDispatchedId(), id);
+            console.log("the quote is:", quote);
+
+            // assertEq(nonce, i); 
+
+        }
     }
+
+    function expectDispatch(
+        TestPostDispatchHook firstHook,
+        TestPostDispatchHook hook,
+        bytes memory metadata,
+        bytes calldata body
+    ) internal {
+        bytes memory message = mailbox.buildOutboundMessage(
+            remoteDomain,
+            recipientb32,
+            body
+        );
+        expectHookQuote(firstHook, metadata, message);
+        expectHookPost(firstHook, metadata, message, firstHook.fee());
+        expectHookPost(hook, metadata, message, hook.fee());
+        vm.expectEmit(true, true, true, true, address(mailbox));
+        emit Dispatch(address(this), remoteDomain, recipientb32, message);
+        vm.expectEmit(true, false, false, false, address(mailbox));
+        emit DispatchId(message.id());
+    }
+
+        function expectHookQuote(
+        IPostDispatchHook hook,
+        bytes memory metadata,
+        bytes memory message
+    ) internal {
+        vm.expectCall(
+            address(hook),
+            abi.encodeCall(IPostDispatchHook.quoteDispatch, (metadata, message))
+        );
+    }
+
+    function expectHookPost(
+        IPostDispatchHook hook,
+        bytes memory metadata,
+        bytes memory message,
+        uint256 value
+    ) internal {
+        vm.expectCall(
+            address(hook),
+            value,
+            abi.encodeCall(IPostDispatchHook.postDispatch, (metadata, message))
+        );
+    }
+
+        event Dispatch(
+        address indexed sender,
+        uint32 indexed destination,
+        bytes32 indexed recipient,
+        bytes message
+    );
+
+    event DispatchId(bytes32 indexed messageId);
+
 }

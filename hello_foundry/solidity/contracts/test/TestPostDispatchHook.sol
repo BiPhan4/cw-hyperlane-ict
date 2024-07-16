@@ -11,7 +11,7 @@ contract TestPostDispatchHook is AbstractPostDispatchHook {
     // ============ Public Storage ============
 
     // test fees for quoteDispatch
-    uint256 public fee = 0;
+    uint256 public fee = 57;
 
     // used to keep track of dispatched message
     mapping(bytes32 messageId => bool dispatched) public messageDispatched;
