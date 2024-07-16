@@ -21,7 +21,7 @@ contract mailboxTest is Test {
     using Message for bytes;
 
     uint32 localDomain = 1;
-    uint32 remoteDomain = 2; // so the domain of the mailbox in wasmvm has to be 2 
+    uint32 remoteDomain = 2; // so the domain of the mailbox in wasmvm has to be 2?
     TestMailbox mailbox;
 
     // MerkleTreeHook merkleHook; *NOTE: really curious if the test passes without this hook
@@ -36,7 +36,6 @@ contract mailboxTest is Test {
 
     address owner;
 
-
     function setUp() public {
         mailbox = new TestMailbox(localDomain);
         recipient = new TestRecipient(); // Initialize TestRecipient correctly
@@ -47,21 +46,13 @@ contract mailboxTest is Test {
         requiredHook = new TestPostDispatchHook();
         overrideHook = new TestPostDispatchHook();
         defaultIsm = new TestIsm();     
-
-        console.log("Owner address at start is:", owner);
-        console.log("Address of mailboxTest contract:", address(this)); // Print the address of mailboxTest contract
    
         owner = msg.sender;
-        console.log("Owner address:", owner);
-        console.log("msg.sender:", msg.sender);
-
-        console.log("Calling initialize with owner:", owner);
 
         // Before adding the below line, the address that called 'mailbox.initialize' was actually the address of the mailboxTest contract.
         // To properly initialize with ownership, the address that calls mailbox.initalize needs to be one and the same as the passed in owner
         // which we want to be 'msg.sender'.
         // We use 'vm.prank(owner)' to ensure that msg.sender (the test runner) is making the mailbox.initialize call--NOT the mailboxTest contract.
-
         vm.prank(owner);
         mailbox.initialize(
             owner,
@@ -72,7 +63,6 @@ contract mailboxTest is Test {
 
         // Verify ownership
         address mailboxOwner = mailbox.owner();
-        console.log("Mailbox owner after initialization:", mailboxOwner);
         require(mailboxOwner == owner, "Owner not set correctly");
 
     }
@@ -109,30 +99,42 @@ contract mailboxTest is Test {
 
         //WARNING: forge logging does not support bytes 
         console.log("lenth of largeBytes is:", largeBytes.length);
+        console.log("lenth of body is:", body.length);
 
         console.log("Input parameter n:", n);
 
-        // we increment by 3 because in hyperlane-monorepo, 3 dispatches are run inside the loop, with each dispatch increasing
-        // the nonce by 1 
-        // for now, don't mind the errored assertion, just 
-        for (uint256 i = 0; i < n; i += 3) {
-            nonce = mailbox.nonce();
+        // hyperlane mono-repo tests 3 dispatches and checks to make sure the nonce increasese each time
+        // we're skipping that for now
 
-            // The TestPostDispatchHook just sets the quote to 0, this isn't really practical for 
-            // estimating the gas cost on testnet and main net 
-            quote = mailbox.quoteDispatch(remoteDomain, recipientb32, largeBytes);
-            expectDispatch(requiredHook, defaultHook, defaultMetadata, body);
-            id = mailbox.dispatch{value: quote}(
-                remoteDomain,
-                recipientb32, 
-                body
-            );
-            assertEq(mailbox.latestDispatchedId(), id);
-            console.log("the quote is:", quote);
 
-            // assertEq(nonce, i); 
+        // NOTE: The TestPostDispatchHook just sets the quote to 0, this isn't really practical for 
+        // estimating the gas cost on testnet and main net 
+        // EDIT NOTE: Is the fee inside the PostDispatchHook meant to pay the validators of the ISM?
 
+        quote = mailbox.quoteDispatch(remoteDomain, recipientb32, largeBytes);
+        expectDispatch(requiredHook, defaultHook, defaultMetadata, body);
+        id = mailbox.dispatch{value: quote}(
+            remoteDomain,
+            recipientb32, 
+            body
+        );
+
+        // if the mail did dispatch the message, then the returned if should have been updated 
+        console.log("latest dispatch id is:", bytesToHexString(mailbox.latestDispatchedId()));
+        console.log("id is:", bytesToHexString(id));
+
+        assertEq(mailbox.latestDispatchedId(), id);
+        console.log("the quote is:", quote);
+    }
+
+    function bytesToHexString(bytes32 data) internal pure returns (string memory) {
+        bytes memory alphabet = "0123456789abcdef";
+        bytes memory str = new bytes(64); // Length of a bytes32 * 2
+        for (uint i = 0; i < 32; i++) {
+            str[i*2] = alphabet[uint(uint8(data[i] >> 4))];
+            str[1+i*2] = alphabet[uint(uint8(data[i] & 0x0f))];
         }
+        return string(str);
     }
 
     function expectDispatch(
@@ -155,7 +157,7 @@ contract mailboxTest is Test {
         emit DispatchId(message.id());
     }
 
-        function expectHookQuote(
+    function expectHookQuote(
         IPostDispatchHook hook,
         bytes memory metadata,
         bytes memory message
@@ -179,7 +181,7 @@ contract mailboxTest is Test {
         );
     }
 
-        event Dispatch(
+    event Dispatch(
         address indexed sender,
         uint32 indexed destination,
         bytes32 indexed recipient,
